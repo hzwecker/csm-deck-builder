@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YPulse · CSM Deck Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e10; --surface: #16161a; --surface2: #1e1e24;
+    --border: #2a2a35; --accent: #c8f060; --accent2: #60c8f0;
+    --text: #f0f0ee; --muted: #7a7a8a; --danger: #f06060;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; font-size: 14px; line-height: 1.6; }
+  header { padding: 20px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .logo { width: 34px; height: 34px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--bg); font-weight: 700; flex-shrink: 0; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: 18px; font-weight: 400; }
+  header span { margin-left: auto; font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .layout { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 63px); }
+  .panel { border-right: 1px solid var(--border); padding: 20px 16px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+  .main { padding: 24px 32px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+  .label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  input[type=password], input[type=text] { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px; padding: 8px 10px; outline: none; transition: border-color .2s; }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+  .btn { background: var(--accent); color: var(--bg); border: none; border-radius: 7px; padding: 8px 14px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--muted); }
+  .token-row { display: flex; gap: 8px; }
+  .token-row input { flex: 1; }
+  .status { font-size: 11px; color: var(--muted); margin-top: 7px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .dot.ok { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .dot.err { background: var(--danger); }
+  .notice { background: rgba(200,240,96,.05); border: 1px solid rgba(200,240,96,.15); border-radius: 8px; padding: 9px 12px; font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+  .notice a { color: var(--accent); text-decoration: none; }
+  .search-wrap { position: relative; }
+  .search-wrap::before { content: '⌕'; position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; pointer-events: none; }
+  .search-wrap input { padding-left: 28px; }
+  .clist { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow-y: auto; max-height: 260px; margin-top: 8px; }
+  .citem { padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
+  .citem:last-child { border-bottom: none; }
+  .citem:hover { background: var(--surface2); }
+  .citem.sel { background: rgba(200,240,96,.07); border-left: 2px solid var(--accent); }
+  .cname { font-size: 13px; font-weight: 500; }
+  .cmeta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .empty { padding: 20px; text-align: center; color: var(--muted); font-size: 12px; }
+  .event-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 11px; cursor: pointer; color: var(--muted); font-family: 'DM Mono', monospace; transition: all .15s; }
+  .tag.on { background: rgba(200,240,96,.1); border-color: rgba(200,240,96,.5); color: var(--accent); }
+  .add-row { display: flex; gap: 6px; margin-top: 8px; }
+  .add-row input { font-size: 11px; }
+
+  /* Main */
+  .top-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .top-bar h2 { font-family: 'DM Serif Display', serif; font-size: 26px; font-weight: 400; }
+  .top-bar h2 em { font-style: italic; color: var(--accent); }
+  .gen-btn { background: var(--accent); color: var(--bg); border: none; border-radius: 8px; padding: 11px 20px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; transition: all .15s; }
+  .gen-btn:hover { opacity: .88; transform: translateY(-1px); }
+  .gen-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .error-bar { background: rgba(240,96,96,.08); border: 1px solid rgba(240,96,96,.25); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #f08080; display: none; }
+  .error-bar.on { display: block; }
+  .placeholder { min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted); text-align: center; }
+  .placeholder-icon { font-size: 44px; opacity: .25; }
+  .loading { min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  .spinner { width: 34px; height: 34px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-msg { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  /* Summary */
+  .account-hdr { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  .avatar { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 18px; font-weight: 600; flex-shrink: 0; }
+  .account-hdr h3 { font-family: 'DM Serif Display', serif; font-size: 19px; font-weight: 400; }
+  .account-hdr p { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .badge { margin-left: auto; border-radius: 6px; padding: 5px 11px; font-size: 11px; font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .badge.pos { background: rgba(200,240,96,.08); border: 1px solid rgba(200,240,96,.3); color: var(--accent); }
+  .badge.neu { background: rgba(96,200,240,.08); border: 1px solid rgba(96,200,240,.3); color: var(--accent2); }
+  .badge.risk { background: rgba(240,96,96,.08); border: 1px solid rgba(240,96,96,.3); color: var(--danger); }
+  .sec-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .12em; color: var(--accent2); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .insight { background: rgba(96,200,240,.05); border: 1px solid rgba(96,200,240,.15); border-radius: 10px; padding: 14px 16px; font-size: 13px; line-height: 1.7; }
+  .metric-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .metric { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .metric-val { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1; margin-bottom: 3px; }
+  .metric-lbl { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .row-list { display: flex; flex-direction: column; gap: 7px; }
+  .row { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; }
+  .row-icon { color: var(--accent); flex-shrink: 0; margin-top: 2px; font-size: 11px; }
+  .row-num { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 3px; flex-shrink: 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .renewal-box { background: rgba(200,240,96,.04); border: 1px solid rgba(200,240,96,.12); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.6; color: #ccc; }
+  .contact-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; display: flex; gap: 9px; align-items: center; }
+  .chip-avatar { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .chip-name { font-size: 12px; font-weight: 500; }
+  .chip-title { font-size: 11px; color: var(--muted); }
+  .event-row { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+  .event-row-name { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+  .event-row-insight { font-size: 12px; color: #999; }
+  .footer-btns { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Y</div>
+  <h1>CSM Deck Builder</h1>
+  <span>YPulse · Customer Success</span>
+</header>
+
+<div class="layout">
+  <div class="panel">
+    <!-- Token -->
+    <div>
+      <div class="label">HubSpot Connection</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div class="token-row">
+          <input type="password" id="tok" placeholder="pat-na1-xxxxxxxx…" />
+          <button class="btn" id="connBtn" onclick="connect()">Connect</button>
+        </div>
+        <div class="status"><span class="dot" id="dot"></span><span id="statusMsg">Enter your HubSpot Private App token</span></div>
+        <div class="notice">Get your token at <a href="https://app.hubspot.com/private-apps" target="_blank">HubSpot → Private Apps</a>.<br>Scopes needed: <code>crm.objects.companies.read</code>, <code>crm.objects.contacts.read</code>, <code>behavioral_events.event_definitions.read_write</code></div>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div style="flex:1;display:flex;flex-direction:column;">
+      <div class="label">Select Customer Account</div>
+      <div class="search-wrap"><input type="text" id="srch" placeholder="Search customers…" oninput="filterList()" disabled /></div>
+      <div class="clist" id="clist"><div class="empty">Connect to load customers</div></div>
+    </div>
+
+    <!-- Events -->
+    <div>
+      <div class="label">Pendo Custom Events to Highlight</div>
+      <div class="event-box">
+        <div style="font-size:12px;color:var(--muted);">Events auto-loaded from HubSpot on connect:</div>
+        <div class="tags" id="tags"><span style="font-size:11px;color:var(--muted);font-style:italic;">Connect to load events…</span></div>
+        <div class="add-row">
+          <input type="text" id="evInput" placeholder="Add event name manually…" onkeydown="if(event.key==='Enter')addEvent()" disabled />
+          <button class="btn btn-ghost" id="addEvBtn" onclick="addEvent()" disabled style="white-space:nowrap;font-size:11px;">+ Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="top-bar">
+      <h2 id="mainTitle">Account Deck <em>Summary</em></h2>
+      <button class="gen-btn" id="genBtn" onclick="generate()" disabled>✦ Generate Summary</button>
+    </div>
+    <div class="error-bar" id="errBar"></div>
+    <div id="outputArea">
+      <div class="placeholder">
+        <div class="placeholder-icon">◈</div>
+        <p style="font-size:13px;max-width:240px;line-height:1.6;color:#444;">Connect HubSpot, select a customer, choose events, then Generate</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let token = '', companies = [], filtered = [], selected = null, activeEvents = new Set(), allEventDefs = [];
+
+// ─── CONNECT ───────────────────────────────────────────────────────────────
+async function connect() {
+  const t = document.getElementById('tok').value.trim();
+  if (!t) return;
+  setStatus('', 'Connecting…');
+  document.getElementById('connBtn').disabled = true;
+  try {
+    const r = await hs(t, 'crm/v3/objects/companies?limit=1&properties=name');
+    if (!r.ok) {
+      const b = await r.json().catch(()=>({}));
+      throw new Error(r.status === 401 ? '401 — Invalid or expired token' : r.status === 403 ? '403 — Missing scopes on Private App' : `Error ${r.status}: ${b.message||''}`);
+    }
+    token = t;
+    setStatus('ok', 'Connected to HubSpot');
+    document.getElementById('connBtn').textContent = 'Reload';
+    document.getElementById('connBtn').disabled = false;
+    document.getElementById('srch').disabled = false;
+    document.getElementById('evInput').disabled = false;
+    document.getElementById('addEvBtn').disabled = false;
+    await Promise.all([loadCompanies(), loadEventDefs()]);
+  } catch(e) {
+    setStatus('err', e.message);
+    document.getElementById('connBtn').disabled = false;
+  }
+}
+
+async function hs(tok, path, opts={}) {
+  return fetch(`https://api.hubapi.com/${path}`, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+}
+
+// ─── COMPANIES ─────────────────────────────────────────────────────────────
+async function loadCompanies() {
+  setStatus('ok', 'Loading customers…');
+  companies = [];
+  let after = null;
+  const props = 'name,domain,industry,contract_end_date,users_active_last_30__pendo_,users_active_last_90__pendo_,pendo_visitors_30d,pendo_days_active_30d,pendo_days_active_90d,pendo_last_visit';
+  for (let i = 0; i < 5; i++) {
+    const body = {
+      filterGroups: [{ filters: [{ propertyName: 'lifecyclestage', operator: 'EQ', value: 'customer' }] }],
+      properties: props.split(','), limit: 100,
+      sorts: [{ propertyName: 'name', direction: 'ASCENDING' }]
+    };
+    if (after) body.after = after;
+    const r = await hs(token, 'crm/v3/objects/companies/search', { method: 'POST', body: JSON.stringify(body) });
+    const d = await r.json();
+    companies.push(...(d.results||[]).filter(c => c.properties.name));
+    if (!d.paging?.next?.after) break;
+    after = d.paging.next.after;
+  }
+  filtered = [...companies];
+  renderList();
+  setStatus('ok', `Connected · ${companies.length} customers`);
+}
+
+// ─── EVENT DEFINITIONS ─────────────────────────────────────────────────────
+async function loadEventDefs() {
+  try {
+    const r = await hs(token, 'events/v3/event-definitions?includeProperties=false&limit=100');
+    if (!r.ok) return;
+    const d = await r.json();
+    allEventDefs = (d.results||[]).map(e => ({ label: e.label || e.name, fqn: e.fullyQualifiedName || e.name }));
+    renderTags();
+  } catch(e) { /* silent — user can add manually */ }
+}
+
+function renderTags() {
+  const c = document.getElementById('tags');
+  if (!allEventDefs.length) { c.innerHTML = '<span style="font-size:11px;color:var(--muted);font-style:italic;">No events found — add manually</span>'; return; }
+  c.innerHTML = allEventDefs.map(e =>
+    `<span class="tag ${activeEvents.has(e.fqn)?'on':''}" onclick="toggleTag('${e.fqn}',this)">${e.label}</span>`
+  ).join('');
+}
+
+function toggleTag(fqn, el) {
+  activeEvents.has(fqn) ? activeEvents.delete(fqn) : activeEvents.add(fqn);
+  el.classList.toggle('on');
+}
+
+function addEvent() {
+  const v = document.getElementById('evInput').value.trim();
+  if (!v) return;
+  if (!allEventDefs.find(e => e.fqn === v)) allEventDefs.push({ label: v, fqn: v });
+  activeEvents.add(v);
+  renderTags();
+  document.getElementById('evInput').value = '';
+}
+
+// ─── LIST ───────────────────────────────────────────────────────────────────
+function filterList() {
+  const q = document.getElementById('srch').value.toLowerCase();
+  filtered = companies.filter(c => (c.properties.name||'').toLowerCase().includes(q) || (c.properties.domain||'').toLowerCase().includes(q));
+  renderList();
+}
+
+function renderList() {
+  const el = document.getElementById('clist');
+  if (!filtered.length) { el.innerHTML = '<div class="empty">No customers found</div>'; return; }
+  el.innerHTML = filtered.slice(0,100).map(c =>
+    `<div class="citem ${selected?.id===c.id?'sel':''}" onclick="pick('${c.id}')">
+      <div class="cname">${c.properties.name}</div>
+      <div class="cmeta">${c.properties.domain||c.properties.industry||'—'}</div>
+    </div>`
+  ).join('');
+}
+
+function pick(id) {
+  selected = companies.find(c=>c.id===id);
+  renderList();
+  document.getElementById('genBtn').disabled = false;
+  document.getElementById('mainTitle').innerHTML = `${selected.properties.name} <em>Summary</em>`;
+  document.getElementById('outputArea').innerHTML = `<div class="placeholder"><div class="placeholder-icon">◈</div><p style="font-size:13px;max-width:260px;line-height:1.6;color:#555;">Ready to generate for <strong>${selected.properties.name}</strong>. Select events above then click Generate.</p></div>`;
+}
+
+// ─── GENERATE ──────────────────────────────────────────────────────────────
+async function generate() {
+  if (!selected) return;
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('errBar').className = 'error-bar';
+  showLoading('Fetching contacts…');
+
+  try {
+    const p = selected.properties;
+
+    // 1. Contacts
+    const cr = await hs(token, 'crm/v3/objects/contacts/search', { method:'POST', body: JSON.stringify({
+      filterGroups:[{filters:[{propertyName:'associatedcompanyid',operator:'EQ',value:selected.id}]}],
+      properties:['email','firstname','lastname','jobtitle'], limit:50
+    })});
+    const contacts = ((await cr.json()).results||[]);
+
+    // 2. Custom events per selected event type
+    showLoading('Fetching Pendo custom events…');
+    let eventRows = [];
+    if (activeEvents.size > 0 && contacts.length > 0) {
+      const emailSet = new Set(contacts.map(c=>c.properties.email).filter(Boolean));
+      for (const fqn of activeEvents) {
+        try {
+          const er = await hs(token, `events/v3/events?eventType=${encodeURIComponent(fqn)}&limit=100&objectType=contact`);
+          if (!er.ok) continue;
+          const ed = await er.json();
+          const hits = (ed.results||[]).filter(ev => emailSet.has(ev.objectId) || contacts.some(c=>c.id===ev.objectId));
+          const def = allEventDefs.find(d=>d.fqn===fqn);
+          eventRows.push({ fqn, label: def?.label||fqn, count: hits.length, recent: hits.slice(0,3).map(h=>h.occurredAt||'') });
+        } catch(e) { /* skip */ }
+      }
+    }
+
+    // 3. Claude summary
+    showLoading('Generating summary…');
+    const payload = {
+      account: { id: selected.id, name: p.name, domain: p.domain, industry: p.industry, contractEnd: p.contract_end_date,
+        pendoActive30: p['users_active_last_30__pendo_'], pendoActive90: p['users_active_last_90__pendo_'],
+        pendoVisitors30: p.pendo_visitors_30d, pendoDaysActive30: p.pendo_days_active_30d,
+        pendoDaysActive90: p.pendo_days_active_90d, pendoLastVisit: p.pendo_last_visit },
+      contacts: contacts.slice(0,8).map(c=>({ name:[c.properties.firstname,c.properties.lastname].filter(Boolean).join(' '), title:c.properties.jobtitle, email:c.properties.email })),
+      customEvents: eventRows
+    };
+
+    const cr2 = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        system:`You are a Customer Success analyst at YPulse, a youth research and insights company. Generate a structured account deck summary for a CSM. Respond ONLY with raw JSON, no markdown, no backticks:
+{
+  "engagementStatus": "positive"|"neutral"|"at-risk",
+  "engagementHeadline": "one punchy line",
+  "accountOverview": "2-3 sentence strategic summary",
+  "keyMetrics": [{"label":"...","value":"..."}],
+  "customEventInsights": [{"event":"...","count":0,"insight":"..."}],
+  "talkingPoints": ["...","...","..."],
+  "renewalOutlook": "brief note",
+  "nextSteps": ["...","...","..."]
+}`,
+        messages:[{ role:'user', content:`Generate deck summary:\n${JSON.stringify(payload,null,2)}` }]
+      })
+    });
+    const cd = await cr2.json();
+    const raw = (cd.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const summary = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    renderSummary(payload, summary, contacts);
+  } catch(e) {
+    document.getElementById('errBar').textContent = 'Error: ' + e.message;
+    document.getElementById('errBar').className = 'error-bar on';
+    document.getElementById('outputArea').innerHTML = '';
+  } finally {
+    document.getElementById('genBtn').disabled = false;
+  }
+}
+
+function showLoading(msg) {
+  document.getElementById('outputArea').innerHTML = `<div class="loading"><div class="spinner"></div><div class="loading-msg">${msg}</div></div>`;
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────────────────
+function renderSummary(data, s, contacts) {
+  const colors = ['#c8f060','#60c8f0','#f0c860','#f060c8','#60f0c8'];
+  const avatarColor = (name) => colors[(name||'?').charCodeAt(0)%colors.length];
+  const initials = (name) => (name||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const statusClass = s.engagementStatus === 'positive' ? 'pos' : s.engagementStatus === 'at-risk' ? 'risk' : 'neu';
+  const statusLabel = s.engagementStatus === 'positive' ? '✓ Engaged' : s.engagementStatus === 'at-risk' ? '⚠ At Risk' : '~ Neutral';
+  const ac = avatarColor(data.account.name);
+
+  const html = `
+    <div class="account-hdr">
+      <div class="avatar" style="background:${ac}18;border:1.5px solid ${ac}40;color:${ac}">${initials(data.account.name)}</div>
+      <div><h3>${data.account.name}</h3><p>${data.account.domain||''} ${data.account.industry?'· '+data.account.industry:''}</p></div>
+      <div class="badge ${statusClass}">${statusLabel}</div>
+    </div>
+
+    <div>
+      <div class="sec-label">Account Overview</div>
+      <div class="insight">
+        <div style="font-weight:600;margin-bottom:6px;color:${s.engagementStatus==='positive'?'var(--accent)':s.engagementStatus==='at-risk'?'var(--danger)':'var(--accent2)'}">${s.engagementHeadline}</div>
+        ${s.accountOverview}
+      </div>
+    </div>
+
+    ${s.keyMetrics?.length ? `
+    <div>
+      <div class="sec-label">Pendo Engagement Metrics</div>
+      <div class="metric-grid">
+        ${s.keyMetrics.map((m,i)=>`<div class="metric"><div class="metric-val" style="color:${i%2?'var(--accent2)':'var(--accent)'}">${m.value}</div><div class="metric-lbl">${m.label}</div></div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${s.customEventInsights?.length ? `
+    <div>
+      <div class="sec-label">Pendo Custom Event Insights</div>
+      <div class="row-list">
+        ${s.customEventInsights.map(e=>`<div class="event-row"><div class="event-row-name">◆ ${e.event} <span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;">${e.count > 0 ? `${e.count}×` : ''}</span></div><div class="event-row-insight">${e.insight}</div></div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div>
+      <div class="sec-label">Talking Points</div>
+      <div class="row-list">
+        ${(s.talkingPoints||[]).map(tp=>`<div class="row"><span class="row-icon">→</span>${tp}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div><div class="sec-label">Renewal Outlook</div><div class="renewal-box">${s.renewalOutlook}</div></div>
+      <div><div class="sec-label">Next Steps</div><div class="row-list">${(s.nextSteps||[]).map((st,i)=>`<div class="row"><span class="row-num">${String(i+1).padStart(2,'0')}</span>${st}</div>`).join('')}</div></div>
+    </div>
+
+    ${contacts.length ? `
+    <div>
+      <div class="sec-label">Key Contacts</div>
+      <div class="contact-chips">
+        ${contacts.slice(0,8).map(c=>{
+          const n=[c.properties.firstname,c.properties.lastname].filter(Boolean).join(' ');
+          const col=avatarColor(n);
+          return `<div class="chip"><div class="chip-avatar" style="background:${col}18;border:1px solid ${col}40;color:${col}">${initials(n)}</div><div><div class="chip-name">${n||c.properties.email}</div><div class="chip-title">${c.properties.jobtitle||''}</div></div></div>`;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="footer-btns">
+      <button class="btn btn-ghost" onclick="generate()">↺ Regenerate</button>
+      <button class="btn" onclick="copyText()">⎘ Copy Summary</button>
+    </div>
+  `;
+
+  document.getElementById('outputArea').innerHTML = html;
+  window._summary = { data, s };
+}
+
+function copyText() {
+  if (!window._summary) return;
+  const {data,s} = window._summary;
+  const t = [`ACCOUNT: ${data.account.name}`, `STATUS: ${s.engagementStatus?.toUpperCase()}`, '', `OVERVIEW\n${s.accountOverview}`, '', `TALKING POINTS\n${(s.talkingPoints||[]).map(x=>`→ ${x}`).join('\n')}`, '', `RENEWAL OUTLOOK\n${s.renewalOutlook}`, '', `NEXT STEPS\n${(s.nextSteps||[]).map((x,i)=>`${i+1}. ${x}`).join('\n')}`].join('\n');
+  navigator.clipboard?.writeText(t);
+  const btn = event.target; btn.textContent='✓ Copied!'; setTimeout(()=>btn.textContent='⎘ Copy Summary',2000);
+}
+
+function setStatus(type, msg) {
+  document.getElementById('dot').className = 'dot' + (type==='ok'?' ok':type==='err'?' err':'');
+  document.getElementById('statusMsg').textContent = msg;
+}
+</script>
+</body>
+</html>
