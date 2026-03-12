@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YPulse · CSM Deck Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e10;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a35;
+    --accent: #c8f060;
+    --accent2: #60c8f0;
+    --text: #f0f0ee;
+    --muted: #7a7a8a;
+    --danger: #f06060;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  header {
+    padding: 28px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--bg);
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: -0.3px;
+  }
+
+  header span {
+    color: var(--muted);
+    font-size: 13px;
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    min-height: calc(100vh - 73px);
+  }
+
+  /* LEFT PANEL */
+  .panel {
+    border-right: 1px solid var(--border);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .token-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .token-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  input[type="password"], input[type="text"] {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  .btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-ghost:hover { border-color: var(--muted); }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    background: var(--muted);
+  }
+  .status-dot.connected { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .status-dot.error { background: var(--danger); }
+
+  .status-text {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    padding-left: 30px;
+  }
+
+  .search-wrap::before {
+    content: '⌕';
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  .company-list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow-y: auto;
+    max-height: 260px;
+    flex: 1;
+  }
+
+  .company-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .company-item:last-child { border-bottom: none; }
+  .company-item:hover { background: var(--surface2); }
+  .company-item.selected { background: rgba(200, 240, 96, 0.08); border-left: 2px solid var(--accent); }
+
+  .company-name {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .company-meta {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .empty-state {
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* EVENT FILTERS */
+  .event-filter-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .event-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .event-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+  }
+  .event-tag.active {
+    background: rgba(200, 240, 96, 0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .custom-event-input {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .custom-event-input input {
+    flex: 1;
+    font-size: 11px;
+  }
+
+  /* RIGHT PANEL */
+  .main {
+    padding: 36px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .main-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .main-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+
+  .main-header h2 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .generate-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .generate-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .generate-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  /* SUMMARY OUTPUT */
+  .summary-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    min-height: 400px;
+    position: relative;
+    flex: 1;
+  }
+
+  .summary-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .placeholder-icon {
+    font-size: 40px;
+    opacity: 0.3;
+  }
+
+  .summary-placeholder p {
+    font-size: 13px;
+    max-width: 240px;
+    line-height: 1.5;
+  }
+
+  /* SUMMARY CONTENT */
+  .summary-content { display: none; }
+  .summary-content.visible { display: block; }
+
+  .deck-section {
+    margin-bottom: 28px;
+  }
+
+  .deck-section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .deck-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .metric-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+
+  .metric-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .event-row {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .event-row-name {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .event-row-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .insight-block {
+    background: rgba(96, 200, 240, 0.06);
+    border: 1px solid rgba(96, 200, 240, 0.2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .account-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .account-avatar {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .account-info h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    font-weight: 400;
+  }
+
+  .account-info p {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .contract-badge {
+    margin-left: auto;
+    background: rgba(240, 96, 96, 0.1);
+    border: 1px solid rgba(240, 96, 96, 0.3);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    color: #f09060;
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+
+  .contract-badge.safe {
+    background: rgba(200, 240, 96, 0.08);
+    border-color: rgba(200, 240, 96, 0.25);
+    color: var(--accent);
+  }
+
+  /* LOADING */
+  .loading-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(14, 14, 16, 0.85);
+    border-radius: 12px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 10;
+  }
+
+  .loading-overlay.visible { display: flex; }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* LOADING DOTS ANIMATION */
+  .dot-pulse::after {
+    content: '';
+    animation: dots 1.2s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  .notice {
+    background: rgba(200, 240, 96, 0.05);
+    border: 1px solid rgba(200, 240, 96, 0.15);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .notice a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .error-msg {
+    background: rgba(240, 96, 96, 0.08);
+    border: 1px solid rgba(240, 96, 96, 0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #f08080;
+    display: none;
+  }
+
+  .error-msg.visible { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">Y</div>
+  <h1>CSM Deck Builder</h1>
+  <span>YPulse · Customer Success</span>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT PANEL -->
+  <div class="panel">
+
+    <!-- TOKEN -->
+    <div>
+      <div class="section-label">HubSpot Connection</div>
+      <div class="token-block">
+        <div class="token-row">
+          <input type="password" id="tokenInput" placeholder="pat-na1-xxxxxxxx-xxxx…" />
+          <button class="btn" id="connectBtn" onclick="connectHubSpot()">Connect</button>
+        </div>
+        <div class="status-text" id="statusText">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusMsg">Enter your HubSpot Private App token</span>
+        </div>
+        <div class="notice" style="margin-top:10px;">
+          Create a token at <a href="https://app.hubspot.com/private-apps" target="_blank">HubSpot → Private Apps</a>. Scopes needed: <code>crm.objects.companies.read</code>, <code>crm.objects.contacts.read</code>, <code>e-commerce</code>, <code>behavioral_events.event_definitions.read_write</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT SEARCH -->
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+      <div class="section-label">Select Account</div>
+      <div class="search-wrap">
+        <input type="text" id="companySearch" placeholder="Search accounts…" oninput="filterCompanies()" disabled />
+      </div>
+      <div class="company-list" id="companyList">
+        <div class="empty-state">Connect to HubSpot to<br>load customers</div>
+      </div>
+    </div>
+
+    <!-- EVENT FILTERS -->
+    <div>
+      <div class="section-label">Pendo Custom Events to Highlight</div>
+      <div class="event-filter-block">
+        <div style="font-size:12px; color:var(--muted);">Select from detected events or add custom:</div>
+        <div class="event-tags" id="eventTags">
+          <span class="event-tag" style="font-style:italic; opacity:0.5;">Load accounts to detect events</span>
+        </div>
+        <div class="custom-event-input">
+          <input type="text" id="customEventInput" placeholder="Add custom event name…" onkeydown="if(event.key==='Enter')addCustomEvent()" disabled />
+          <button class="btn btn-ghost" onclick="addCustomEvent()" id="addEventBtn" disabled>+ Add</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="main">
+    <div class="main-header">
+      <h2>Account Deck <em>Summary</em></h2>
+      <button class="generate-btn" id="generateBtn" onclick="generateSummary()" disabled>
+        ✦ Generate Summary
+      </button>
+    </div>
+
+    <div id="errorMsg" class="error-msg"></div>
+
+    <div class="summary-area" id="summaryArea">
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text dot-pulse" id="loadingText">Fetching account data</div>
+      </div>
+
+      <div id="summaryPlaceholder" class="summary-placeholder">
+        <div class="placeholder-icon">◈</div>
+        <p>Select an account from the left and click <strong>Generate Summary</strong> to build a deck preview</p>
+      </div>
+
+      <div id="summaryContent" class="summary-content">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
+
+    <div class="footer-actions" id="footerActions" style="display:none;">
+      <button class="btn btn-ghost" onclick="generateSummary()">↺ Regenerate</button>
+      <button class="btn" onclick="copyToClipboard()">⎘ Copy Summary</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let hubspotToken = '';
+let allCompanies = [];
+let filteredCompanies = [];
+let selectedCompany = null;
+let selectedEvents = new Set();
+let detectedEventTypes = [];
+
+async function connectHubSpot() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) return;
+
+  setStatus('loading', 'Connecting…');
+  document.getElementById('connectBtn').disabled = true;
+
+  try {
+    let res;
+    try {
+      res = await fetch('https://api.hubapi.com/crm/v3/objects/companies?limit=1&properties=name', {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+    } catch (networkErr) {
+      throw new Error('Network blocked. Make sure you opened this via http://localhost:8080 in Chrome, not by double-clicking the file. (' + networkErr.message + ')');
+    }
+
+    if (res.status === 401) throw new Error('401 Unauthorized — token is invalid or expired. Copy a fresh token from HubSpot Private Apps.');
+    if (res.status === 403) throw new Error('403 Forbidden — token is missing required scopes. Enable crm.objects.companies.read in your Private App.');
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error('HubSpot error ' + res.status + ': ' + body);
+    }
+
+    hubspotToken = token;
+    setStatus('connected', 'Connected to HubSpot');
+    document.getElementById('connectBtn').textContent = 'Reload';
+    document.getElementById('connectBtn').disabled = false;
+    document.getElementById('companySearch').disabled = false;
+    document.getElementById('customEventInput').disabled = false;
+    document.getElementById('addEventBtn').disabled = false;
+
+    await loadCompanies();
+    await loadEventDefinitions();
+  } catch (e) {
+    setStatus('error', e.message);
+    document.getElementById('connectBtn').disabled = false;
+  }
+}
+
+async function loadCompanies() {
+  setStatus('connected', 'Loading customer accounts…');
+  allCompanies = [];
+  let after = 0;
+
+  // Search for companies with lifecyclestage = customer, up to 500
+  for (let i = 0; i < 5; i++) {
+    const body = {
+      filterGroups: [{ filters: [{ propertyName: 'lifecyclestage', operator: 'EQ', value: 'customer' }] }],
+      properties: ['name','domain','industry','contract_end_date','users_active_last_30__pendo_','users_active_last_90__pendo_','pendo_visitors_30d','pendo_days_active_30d','pendo_last_visit','lifecyclestage'],
+      limit: 100,
+      sorts: [{ propertyName: 'name', direction: 'ASCENDING' }]
+    };
+    if (after) body.after = after;
+
+    const res = await fetch('https://api.hubapi.com/crm/v3/objects/companies/search', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${hubspotToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    const named = (data.results || []).filter(c => c.properties.name);
+    allCompanies.push(...named);
+    if (!data.paging?.next?.after) break;
+    after = data.paging.next.after;
+  }
+
+  allCompanies.sort((a, b) => (a.properties.name || '').localeCompare(b.properties.name || ''));
+  filteredCompanies = [...allCompanies];
+  renderCompanyList();
+  setStatus('connected', `Connected · ${allCompanies.length} customers loaded`);
+}
+
+async function loadEventDefinitions() {
+  try {
+    const res = await fetch('https://api.hubapi.com/events/v3/event-definitions?includeProperties=false', {
+      headers: { 'Authorization': `Bearer ${hubspotToken}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    detectedEventTypes = (data.results || []).map(e => e.label || e.name || e.fullyQualifiedName).filter(Boolean);
+    renderEventTags();
+  } catch (e) {
+    // silently fail - user can add manually
+  }
+}
+
+function renderEventTags() {
+  const container = document.getElementById('eventTags');
+  container.innerHTML = '';
+
+  const allTags = [...detectedEventTypes];
+  if (allTags.length === 0) {
+    container.innerHTML = '<span class="event-tag" style="opacity:0.5;font-style:italic;">No events found — add manually below</span>';
+    return;
+  }
+
+  allTags.forEach(label => {
+    const tag = document.createElement('span');
+    tag.className = 'event-tag' + (selectedEvents.has(label) ? ' active' : '');
+    tag.textContent = label;
+    tag.onclick = () => toggleEvent(label, tag);
+    container.appendChild(tag);
+  });
+}
+
+function toggleEvent(name, el) {
+  if (selectedEvents.has(name)) {
+    selectedEvents.delete(name);
+    el.classList.remove('active');
+  } else {
+    selectedEvents.add(name);
+    el.classList.add('active');
+  }
+}
+
+function addCustomEvent() {
+  const input = document.getElementById('customEventInput');
+  const val = input.value.trim();
+  if (!val) return;
+
+  if (!detectedEventTypes.includes(val)) {
+    detectedEventTypes.push(val);
+  }
+  selectedEvents.add(val);
+  renderEventTags();
+  input.value = '';
+}
+
+function filterCompanies() {
+  const q = document.getElementById('companySearch').value.toLowerCase();
+  filteredCompanies = allCompanies.filter(c =>
+    (c.properties.name || '').toLowerCase().includes(q) ||
+    (c.properties.domain || '').toLowerCase().includes(q)
+  );
+  renderCompanyList();
+}
+
+function renderCompanyList() {
+  const list = document.getElementById('companyList');
+  if (filteredCompanies.length === 0) {
+    list.innerHTML = '<div class="empty-state">No accounts found</div>';
+    return;
+  }
+  list.innerHTML = filteredCompanies.slice(0, 80).map(c => `
+    <div class="company-item ${selectedCompany?.id === c.id ? 'selected' : ''}" onclick="selectCompany('${c.id}')">
+      <div class="company-name">${c.properties.name}</div>
+      <div class="company-meta">${c.properties.domain || c.properties.industry || '—'}</div>
+    </div>
+  `).join('');
+}
+
+function selectCompany(id) {
+  selectedCompany = allCompanies.find(c => c.id === id);
+  renderCompanyList();
+  document.getElementById('generateBtn').disabled = false;
+
+  const h2 = document.querySelector('.main-header h2');
+  h2.innerHTML = `${selectedCompany.properties.name} <em>Summary</em>`;
+}
+
+async function generateSummary() {
+  if (!selectedCompany) return;
+
+  showLoading('Fetching account data');
+  showError('');
+
+  try {
+    // Fetch contacts for this company
+    setLoadingText('Fetching contacts');
+    const contactsRes = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/search`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${hubspotToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filterGroups: [{ filters: [{ propertyName: 'associatedcompanyid', operator: 'EQ', value: selectedCompany.id }] }],
+        properties: ['email', 'firstname', 'lastname', 'jobtitle'],
+        limit: 50
+      })
+    });
+    const contactsData = await contactsRes.json();
+    const contacts = contactsData.results || [];
+
+    // Fetch custom events for contacts
+    let eventData = [];
+    if (selectedEvents.size > 0 && contacts.length > 0) {
+      setLoadingText('Fetching Pendo events');
+      const emailList = contacts.map(c => c.properties.email).filter(Boolean);
+
+      for (const eventName of selectedEvents) {
+        try {
+          const evRes = await fetch(`https://api.hubapi.com/events/v3/events?eventType=${encodeURIComponent(eventName)}&objectType=contact&limit=50`, {
+            headers: { 'Authorization': `Bearer ${hubspotToken}` }
+          });
+          if (evRes.ok) {
+            const evData = await evRes.json();
+            const relevant = (evData.results || []).filter(ev =>
+              emailList.includes(ev.objectId) || contacts.some(c => c.id === ev.objectId)
+            );
+            if (relevant.length > 0) {
+              eventData.push({ eventName, count: relevant.length, events: relevant.slice(0, 5) });
+            }
+          }
+        } catch (e) { /* skip */ }
+      }
+    }
+
+    // Build data payload
+    setLoadingText('Generating deck summary');
+    const p = selectedCompany.properties;
+
+    const accountData = {
+      name: p.name,
+      domain: p.domain,
+      industry: p.industry,
+      contractEndDate: p.contract_end_date,
+      pendoUsersActive30: p['users_active_last_30__pendo_'],
+      pendoUsersActive90: p['users_active_last_90__pendo_'],
+      pendoVisitors30: p['pendo_visitors_30d'],
+      pendoDaysActive30: p['pendo_days_active_30d'],
+      pendoLastVisit: p['pendo_last_visit'],
+      contacts: contacts.slice(0, 8).map(c => ({
+        name: [c.properties.firstname, c.properties.lastname].filter(Boolean).join(' '),
+        title: c.properties.jobtitle,
+        email: c.properties.email
+      })),
+      pendoEvents: eventData,
+      selectedEventFilters: [...selectedEvents]
+    };
+
+    // Call Claude API
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are a Customer Success analyst at YPulse, a youth research and insights company. 
+Generate a structured deck summary for a CSM to use in an account review. 
+Respond ONLY with a JSON object, no markdown, no backticks.
+Format:
+{
+  "accountOverview": "2-3 sentence summary of account",
+  "engagementSnapshot": { "headline": "one-line engagement status", "trend": "positive|neutral|at-risk" },
+  "keyMetrics": [{ "label": "...", "value": "..." }],
+  "pendoEventHighlights": [{ "event": "...", "insight": "..." }],
+  "talkingPoints": ["...", "...", "..."],
+  "renewalOutlook": "brief renewal risk/opportunity note",
+  "recommendedNextSteps": ["...", "...", "..."]
+}`,
+        messages: [{ role: 'user', content: `Generate a deck summary for this account:\n${JSON.stringify(accountData, null, 2)}` }]
+      })
+    });
+
+    const claudeData = await claudeRes.json();
+    const rawText = claudeData.content?.find(b => b.type === 'text')?.text || '{}';
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    const summary = JSON.parse(clean);
+
+    renderSummary(accountData, summary);
+    hideLoading();
+    document.getElementById('footerActions').style.display = 'flex';
+
+  } catch (e) {
+    hideLoading();
+    showError(`Error generating summary: ${e.message}. Check your token permissions and try again.`);
+  }
+}
+
+function renderSummary(data, s) {
+  const contractDate = data.contractEndDate ? new Date(data.contractEndDate) : null;
+  const daysToRenewal = contractDate ? Math.round((contractDate - new Date()) / 86400000) : null;
+  const renewalSafe = daysToRenewal === null || daysToRenewal > 90;
+
+  const trendColor = s.engagementSnapshot?.trend === 'positive' ? 'var(--accent)' :
+                     s.engagementSnapshot?.trend === 'at-risk' ? 'var(--danger)' : 'var(--accent2)';
+
+  const html = `
+    <div class="account-header">
+      <div class="account-avatar">${(data.name || '?')[0].toUpperCase()}</div>
+      <div class="account-info">
+        <h3>${data.name}</h3>
+        <p>${data.domain || ''} ${data.industry ? '· ' + data.industry : ''}</p>
+      </div>
+      ${contractDate ? `<div class="contract-badge ${renewalSafe ? 'safe' : ''}">
+        ${renewalSafe ? '✓' : '⚠'} Renewal ${daysToRenewal > 0 ? 'in ' + daysToRenewal + 'd' : 'overdue'}
+      </div>` : ''}
+    </div>
+
+    <div class="deck-section">
+      <div class="deck-section-title">Account Overview</div>
+      <div class="insight-block">
+        <div style="font-size:13px; font-weight:600; color:${trendColor}; margin-bottom:6px;">${s.engagementSnapshot?.headline || ''}</div>
+        ${s.accountOverview || ''}
+      </div>
+    </div>
+
+    ${s.keyMetrics?.length ? `
+    <div class="deck-section">
+      <div class="deck-section-title">Pendo Engagement Metrics</div>
+      <div class="metric-grid">
+        ${s.keyMetrics.map(m => `
+          <div class="metric-card">
+            <div class="metric-value">${m.value}</div>
+            <div class="metric-label">${m.label}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${s.pendoEventHighlights?.length ? `
+    <div class="deck-section">
+      <div class="deck-section-title">Pendo Event Highlights</div>
+      <div class="event-list">
+        ${s.pendoEventHighlights.map(e => `
+          <div class="event-row">
+            <span class="event-row-name">${e.event}</span>
+            <span class="event-row-count" style="color:var(--muted); font-style:italic;">${e.insight}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="deck-section">
+      <div class="deck-section-title">Key Talking Points</div>
+      <div class="event-list">
+        ${(s.talkingPoints || []).map(tp => `
+          <div class="event-row">
+            <span style="font-size:11px; color:var(--accent); margin-right:8px;">→</span>
+            <span class="event-row-name" style="font-weight:400;">${tp}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="deck-section">
+      <div class="deck-section-title">Renewal Outlook</div>
+      <div class="insight-block" style="border-color: rgba(200,240,96,0.2);">${s.renewalOutlook || '—'}</div>
+    </div>
+
+    ${s.recommendedNextSteps?.length ? `
+    <div class="deck-section">
+      <div class="deck-section-title">Recommended Next Steps</div>
+      <div class="event-list">
+        ${s.recommendedNextSteps.map((step, i) => `
+          <div class="event-row">
+            <span style="font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); margin-right:10px;">${String(i+1).padStart(2,'0')}</span>
+            <span class="event-row-name" style="font-weight:400;">${step}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${data.contacts?.length ? `
+    <div class="deck-section">
+      <div class="deck-section-title">Key Contacts (${data.contacts.length})</div>
+      <div class="event-list">
+        ${data.contacts.map(c => `
+          <div class="event-row">
+            <span class="event-row-name">${c.name || c.email}</span>
+            <span class="event-row-count" style="color:var(--muted);">${c.title || ''}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+  `;
+
+  document.getElementById('summaryPlaceholder').style.display = 'none';
+  const content = document.getElementById('summaryContent');
+  content.innerHTML = html;
+  content.classList.add('visible');
+
+  window._lastSummary = { data, s };
+}
+
+function setStatus(state, msg) {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusMsg');
+  dot.className = 'status-dot' + (state === 'connected' ? ' connected' : state === 'error' ? ' error' : '');
+  text.textContent = msg;
+}
+
+function showLoading(msg) {
+  document.getElementById('loadingOverlay').classList.add('visible');
+  document.getElementById('loadingText').textContent = msg;
+  document.getElementById('generateBtn').disabled = true;
+}
+
+function setLoadingText(msg) {
+  document.getElementById('loadingText').textContent = msg;
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('visible');
+  document.getElementById('generateBtn').disabled = false;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.className = 'error-msg' + (msg ? ' visible' : '');
+}
+
+function copyToClipboard() {
+  if (!window._lastSummary) return;
+  const { data, s } = window._lastSummary;
+  const text = [
+    `ACCOUNT: ${data.name}`,
+    `DOMAIN: ${data.domain || '—'}`,
+    '',
+    `OVERVIEW: ${s.accountOverview}`,
+    '',
+    `ENGAGEMENT: ${s.engagementSnapshot?.headline}`,
+    '',
+    'KEY METRICS:',
+    ...(s.keyMetrics || []).map(m => `  • ${m.label}: ${m.value}`),
+    '',
+    'TALKING POINTS:',
+    ...(s.talkingPoints || []).map(tp => `  → ${tp}`),
+    '',
+    `RENEWAL OUTLOOK: ${s.renewalOutlook}`,
+    '',
+    'NEXT STEPS:',
+    ...(s.recommendedNextSteps || []).map((st, i) => `  ${i+1}. ${st}`)
+  ].join('\n');
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = '⎘ Copy Summary', 2000);
+  });
+}
+</script>
+</body>
+</html>
